@@ -5,23 +5,21 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ColorFilter;
-import android.graphics.LightingColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.support.v4.content.ContextCompat;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.widget.ImageView;
 
 import java.text.MessageFormat;
-import java.util.Random;
 
 /**
  * Created by jon on 3/20/2016.
@@ -29,13 +27,12 @@ import java.util.Random;
 public class ImpressionistView extends View {
 
     private ImageView _imageView;
-
     private Canvas _offScreenCanvas = null;
     private Bitmap _offScreenBitmap = null;
     private Paint _paint = new Paint();
-    private Path _path = new Path();
-    //brush here
-    private Bitmap _brush = BitmapFactory.decodeResource(this.getResources(), R.mipmap.triangle);
+    private VelocityTracker velocityTracker = null;
+    // Bitmap brush here
+    private Bitmap _brush = BitmapFactory.decodeResource(this.getResources(), R.drawable.ic_cat_silhouette);
 
     private int _alpha = 150;
     private int _defaultRadius = 25;
@@ -46,6 +43,7 @@ public class ImpressionistView extends View {
     private BrushType _brushType = BrushType.Square;
     private float _minBrushRadius = 5;
 
+    // Constructors
     public ImpressionistView(Context context) {
         super(context);
         init(null, 0);
@@ -74,15 +72,13 @@ public class ImpressionistView extends View {
         //      http://developer.android.com/reference/android/view/View.html#getDrawingCache()
         this.setDrawingCacheEnabled(true);
 
-        _path = new Path();
-
         _paint.setColor(Color.RED);
         _paint.setAlpha(_alpha);
         _paint.setAntiAlias(true);
         _paint.setStyle(Paint.Style.FILL);
         _paint.setStrokeWidth(4);
 
-        _paintBorder.setColor(Color.BLACK);
+        _paintBorder.setColor(Color.WHITE);
         _paintBorder.setStrokeWidth(3);
         _paintBorder.setStyle(Paint.Style.STROKE);
         _paintBorder.setAlpha(50);
@@ -122,6 +118,7 @@ public class ImpressionistView extends View {
      */
     public void clearPainting(){
         //TODO
+        _offScreenCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
     }
 
     @Override
@@ -138,32 +135,71 @@ public class ImpressionistView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent){
+        float currX = motionEvent.getX();
+        float currY = motionEvent.getY();
 
+        // To avoid crashing the app, if the user touches somewhere beyond the bitmap, return true.
+        if (currX >= _offScreenBitmap.getWidth() || currY >= _offScreenBitmap.getHeight() || currX <= 0 || currY <= 0) {
+            return true;
+        }
         //TODO
         //Basically, the way this works is to list for Touch Down and Touch Move events and determine where those
         //touch locations correspond to the bitmap in the ImageView. You can then grab info about the bitmap--like the pixel color--
         //at that location
+        if (velocityTracker == null) { // Velocity
+            velocityTracker = VelocityTracker.obtain();
+        }
+        velocityTracker.addMovement(motionEvent);
+        velocityTracker.computeCurrentVelocity(1000);
+
+        float vx = velocityTracker.getXVelocity();
+
         Bitmap imageViewBitmap = _imageView.getDrawingCache();
-        float currX = motionEvent.getX();
-        float currY = motionEvent.getY();
-        int colorAtTouchPixelInImage = imageViewBitmap.getPixel((int)currX, (int)currY);
-        ColorFilter filter = new LightingColorFilter(colorAtTouchPixelInImage, 1);
-        _paint.setColorFilter(filter);
-        switch (motionEvent.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                Log.i("down", "" + colorAtTouchPixelInImage + "");
-                _path.moveTo(currX, currY);
-                break;
-            case MotionEvent.ACTION_MOVE:
-                Log.i("move", "" + colorAtTouchPixelInImage + "");
-                _offScreenCanvas.drawBitmap(_brush, currX - _brush.getWidth() / 2, currY - _brush.getHeight() / 2, _paint);
-                break;
+        // get color at (x,y)
+        int colorAtTouchPixelInImage = imageViewBitmap.getPixel((int) currX, (int) currY);
+        _paint.setColor(colorAtTouchPixelInImage);
+
+        if (_brushType == BrushType.Circle) {
+            _offScreenCanvas.drawCircle(currX, currY, 20, _paint);
+        } else if (_brushType == BrushType.Line) {
+            _offScreenCanvas.drawLine(currX, currY, currX + 20, currY + 20, _paint);
+        } else if (_brushType == BrushType.Square) {
+            _offScreenCanvas.drawRect(currX, currY, currX + 30, currY + 30, _paint);
+            // Rayna's custom brush with velocity implementation
+        } else if (_brushType == BrushType.Words) {
+            vx = Math.abs(vx);
+            if (vx > 2500) {
+                _paint.setTextSize(100);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    _paint.setLetterSpacing(15); // for aesthetic purposes
+                }
+            } else if (vx <= 1500 && vx > 1000) { // decided based on trial and error
+                _paint.setTextSize(70);
+            } else if (vx <= 1000 && vx > 500) {
+                _paint.setTextSize(50);
+            } else if (vx <= 500 && vx > 100) {
+                _paint.setTextSize(40);
+            } else if (vx <= 100 && vx > 50) {
+                _paint.setTextSize(30);
+            } else if (vx <= 50 && vx > 25) {
+                _paint.setTextSize(20);
+            } else if (vx <= 25 && vx > 10) {
+                _paint.setTextSize(10);
+            } else {
+                _paint.setTextSize(5);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    _paint.setLetterSpacing(10);
+                }
+            }
+            _paint.setTextAlign(Paint.Align.CENTER); // this keeps the text centered on the touch
+            _offScreenCanvas.drawText("ART", currX, currY + 30, _paint); // + 30 for aesthetics
+            // Rayna's second custom brush just for giggles
+        } else if (_brushType == BrushType.Kittens) {
+            _offScreenCanvas.drawBitmap(_brush, currX, currY, _paint);
         }
         invalidate();
         return true;
     }
-
-
 
 
     /**
