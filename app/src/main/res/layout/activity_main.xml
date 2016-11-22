@@ -15,7 +15,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:weightSum="2">
+        android:weightSum="2"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -36,7 +39,7 @@
                 android:layout_height="match_parent"
                 android:id="@+id/viewImpressionist"
                 android:layout_weight="1"
-                android:background="#f5f5f5" />
+                android:background="#000" />
         </LinearLayout>
 
         <LinearLayout
@@ -44,35 +47,46 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:orientation="horizontal"
-            android:layout_weight="0.1">
+            android:layout_weight="0.1"
+            android:weightSum="1">
 
             <Button
-                android:layout_width="wrap_content"
+                android:layout_width="98dp"
                 android:layout_height="wrap_content"
                 android:text="Download Images"
                 android:id="@+id/buttonDownloadImages"
-                android:onClick="onButtonClickDownloadImages"/>
+                android:onClick="onButtonClickDownloadImages"
+                android:layout_weight="0.64" />
 
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Load Image"
                 android:id="@+id/buttonLoadImage"
-                android:onClick="onButtonClickLoadImage"/>
+                android:onClick="onButtonClickLoadImage"
+                android:layout_weight="0.22" />
 
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Brush"
                 android:id="@+id/buttonBrush"
-                android:onClick="onButtonClickSetBrush"/>
+                android:onClick="onButtonClickSetBrush"
+                android:layout_weight="0.15" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Save"
+                android:id="@+id/buttonSave"
+                android:onClick="onButtonClickSave" />
 
             <Button
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Clear"
                 android:id="@+id/buttonClear"
-                android:onClick="onButtonClickClear"/>
+                android:onClick="onButtonClickClear" />
 
 
         </LinearLayout>

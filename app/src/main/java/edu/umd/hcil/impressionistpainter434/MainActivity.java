@@ -4,32 +4,36 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.URLUtil;
-import android.widget.ActionMenuView;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity implements OnMenuItemClickListener {
 
     private static int RESULT_LOAD_IMAGE = 1;
     private  ImpressionistView _impressionistView;
+    // AudioManager
+    private AudioManager mAudioManager;
+    // SoundPool
+    private SoundPool mSoundPool;
+    // ID for the meow sound
+    private int mSoundID;
+    // Audio volume
+    private float mStreamVolume;
 
     // These images are downloaded and added to the Android Gallery when the 'Download Images' button is clicked.
     // This was super useful on the emulator where there are no images by default
@@ -59,10 +63,10 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         _impressionistView = (ImpressionistView)findViewById(R.id.viewImpressionist);
         ImageView imageView = (ImageView)findViewById(R.id.viewImage);
         _impressionistView.setImageView(imageView);
-
     }
 
     public void onButtonClickClear(View v) {
@@ -76,6 +80,25 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
                         _impressionistView.clearPainting();
                     }})
                 .setNegativeButton(android.R.string.no, null).show();
+    }
+
+    public void onButtonClickSave(View v) {
+        File exSD = Environment.getExternalStorageDirectory();
+        // if the gallery has no images, fixes bug in emulators
+        if (exSD != null) {
+            File gallery = new File(exSD, "DCIM/Camera");
+            if (!gallery.exists()) {
+                gallery.mkdirs();
+            }
+        }
+        _impressionistView.setDrawingCacheEnabled(true);
+        _impressionistView.buildDrawingCache(true); // good
+        // THERE'S A BUG HERE AHHHHHHHHH
+        ImpressionistView temp = (ImpressionistView)findViewById(R.id.viewImpressionist);
+        temp.layout(0, 0, _impressionistView.getHeight(), _impressionistView.getWidth());
+        Bitmap b = Bitmap.createBitmap(_impressionistView.getDrawingCache()); // doesn't save colors
+        MediaStore.Images.Media.insertImage(getContentResolver(), b, "img", "test");
+        _impressionistView.setDrawingCacheEnabled(false);
     }
 
     public void onButtonClickSetBrush(View v) {
@@ -99,13 +122,14 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
                 Toast.makeText(this, "Line Brush", Toast.LENGTH_SHORT).show();
                 _impressionistView.setBrushType(BrushType.Line);
                 return true;
-            case R.id.menuCircleSplatter:
-                Toast.makeText(this, "Circle Splatter Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.CircleSplatter);
+            case R.id.menuWord:
+                Toast.makeText(this, "Words Brush", Toast.LENGTH_SHORT).show();
+                _impressionistView.setBrushType(BrushType.Words);
                 return true;
-            case R.id.menuLineSplatter:
-                Toast.makeText(this, "Line Splatter Brush", Toast.LENGTH_SHORT).show();
-                _impressionistView.setBrushType(BrushType.LineSplatter);
+            case R.id.menuKittens:
+                Toast.makeText(this, "Meow", Toast.LENGTH_SHORT).show();
+                _impressionistView.setBrushType(BrushType.Kittens);
+                mSoundPool.play(mSoundID, mStreamVolume, mStreamVolume, 1, 0, 1.0f);
                 return true;
         }
         return false;
@@ -138,21 +162,7 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
 
             @Override
             public void onComplete(String imageUrl, Bitmap downloadedBitmap) {
-                File externalStorageDirFile = Environment.getExternalStorageDirectory();
-                String externalStorageDirStr = Environment.getExternalStorageDirectory().getAbsolutePath();
-                boolean checkStorage = FileUtils.checkPermissionToWriteToExternalStorage(MainActivity.this);
-                String guessedFilename = URLUtil.guessFileName(imageUrl, null, null);
 
-                // See: http://developer.android.com/training/basics/data-storage/files.html
-                // Get the directory for the user's public pictures directory.
-                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), guessedFilename);
-                try {
-                    boolean compressSucceeded = downloadedBitmap.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(file));
-                    FileUtils.addImageToGallery(file.getAbsolutePath(), getApplicationContext());
-                    Toast.makeText(getApplicationContext(), "Saved to " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
             }
         });
 
@@ -205,5 +215,29 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
             }
 
         }
+    }
+
+    // This code sample is taken from CMSC436. We learned how to do this in class.
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        mStreamVolume = (float) mAudioManager
+                .getStreamVolume(AudioManager.STREAM_MUSIC)
+                / mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        mSoundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 0);
+        // The .wav is from http://www.wavsource.com/animals/animals.htm
+        mSoundID = mSoundPool.load(this, R.raw.cat_meow_x, 1);
+    }
+
+    @Override
+    protected void onPause() {
+        // Release all SoundPool resources
+        mSoundPool.unload(mSoundID);
+        mSoundPool.release();
+        mSoundPool = null;
+
+        super.onPause();
     }
 }

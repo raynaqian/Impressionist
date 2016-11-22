@@ -11,12 +11,9 @@
     <item android:id="@+id/menuLine"
         android:title="Line" />
 
-    <item android:id="@+id/menuCircleSplatter"
-        android:title="Circle Splatter" />
+    <item android:id="@+id/menuWord"
+        android:title="Word ART" />
 
-    <item android:id="@+id/menuLineSplatter"
-        android:title="Line Splatter" />
-
-
-
+    <item android:id="@+id/menuKittens"
+        android:title="Kittens" />
 </menu>
