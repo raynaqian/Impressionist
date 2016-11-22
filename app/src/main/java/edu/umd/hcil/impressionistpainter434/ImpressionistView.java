@@ -195,12 +195,15 @@ public class ImpressionistView extends View {
             _offScreenCanvas.drawText("ART", currX, currY + 30, _paint); // + 30 for aesthetics
             // Rayna's second custom brush just for giggles
         } else if (_brushType == BrushType.Kittens) {
-            _offScreenCanvas.drawBitmap(_brush, currX, currY, _paint);
+            _offScreenCanvas.drawBitmap(_brush, currX-30, currY-10, _paint);
         }
         invalidate();
         return true;
     }
 
+    public Bitmap getBitmap() {
+        return _offScreenBitmap;
+    }
 
     /**
      * This method is useful to determine the bitmap position within the Image View. It's not needed for anything else

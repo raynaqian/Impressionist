@@ -93,10 +93,7 @@ public class MainActivity extends AppCompatActivity implements OnMenuItemClickLi
         }
         _impressionistView.setDrawingCacheEnabled(true);
         _impressionistView.buildDrawingCache(true); // good
-        // THERE'S A BUG HERE AHHHHHHHHH
-        ImpressionistView temp = (ImpressionistView)findViewById(R.id.viewImpressionist);
-        temp.layout(0, 0, _impressionistView.getHeight(), _impressionistView.getWidth());
-        Bitmap b = Bitmap.createBitmap(_impressionistView.getDrawingCache()); // doesn't save colors
+        Bitmap b = Bitmap.createBitmap(_impressionistView.getBitmap()); // doesn't save colors
         MediaStore.Images.Media.insertImage(getContentResolver(), b, "img", "test");
         _impressionistView.setDrawingCacheEnabled(false);
     }
